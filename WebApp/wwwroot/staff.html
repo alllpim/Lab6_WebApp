@@ -1,0 +1,250 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>Cases</title>
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.0/css/bootstrap.min.css" rel="stylesheet" />
+</head>
+<body>
+    <h2 class="text-center">Table "Staff"</h2>
+    <form name="staffForm">
+        <input type="hidden" id="idIn" name="idIn" value=0 />
+        <div class="form-group">
+            <label Добавить>Full Name:</label>
+            <input id="nameIn" name="nameIn" />
+            <br />
+            <label Добавить>Adress:</label>
+            <input id="adressIn" name="adressIn" />
+            <br />
+            <label Добавить>Phone:</label>
+            <input type="number" id="phoneIn" name="phoneIn" />
+            <br />
+            <label Добавить>Info:</label>
+            <input id="infoIn" name="InfoIn" />
+            <br />
+            <label Добавить>Reward:</label>
+            <input id="rewardIn" name="rewardIn" />
+
+        </div>
+        <div class="form-group">
+            <label Добавить>Position:</label>
+            <select id="positionIn" name="positionIn">
+            </select>
+            <br />
+            <button type="submit" id="submit" class="btn btn-primary">Save</button>
+            <a id="reset" onclick="reset()" class="btn btn-primary text-white">Reset</a>
+        </div>
+    </form>
+    <table class="table table-striped text-break">
+        <thead class="thead-dark">
+            <tr>
+                <th>Id</th>
+                <th>FullName</th>
+                <th>Adress</th>
+                <th>Phone</th>
+                <th>Position</th>
+                <th>Info</th>
+                <th>Reward</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+        </tbody>
+    </table>
+    <script>
+    async function GetStaffs() {
+        const response = await fetch("/api/staff", {
+            method: "GET",
+            headers: { "Accept": "application/json" }
+        });
+
+        if (response.ok === true) {
+            const staff = await response.json();
+            let rows = document.querySelector("tbody");
+            staff.forEach(s => {
+                rows.append(row(s));
+            });
+        }
+    }
+
+    async function GetStaff(id) {
+        const response = await fetch("/api/staff/" + id, {
+            method: "GET",
+            headers: { "Accept": "application/json" }
+        });
+        if (response.ok === true) {
+            const staff = await response.json();
+            const form = document.forms["staffForm"];
+            form.elements["idIn"].value = staff.id;
+            form.elements["nameIn"].value = staff.fullName;
+            form.elements["adressIn"].value = staff.adress;
+            form.elements["phoneIn"].value = staff.phone;
+            form.elements["infoIn"].value = staff.info;
+            form.elements["rewardIn"].value = staff.reward;
+            form.elements["positionIn"].value = staff.positionId;
+        }
+    }
+
+    function row(staff) {
+        const tr = document.createElement("tr");
+        tr.setAttribute("data-rowid", staff.id);
+
+        const idTd = document.createElement("td");
+        idTd.append(staff.id);
+        tr.append(idTd);
+
+
+        const nameTd = document.createElement("td");
+        nameTd.append(staff.fullName);
+        tr.append(nameTd);
+
+        const adressTd = document.createElement("td");
+        adressTd.append(staff.adress);
+        tr.append(adressTd);
+
+        const phoneTd = document.createElement("td");
+        phoneTd.append(staff.phone);
+        tr.append(phoneTd);
+
+        const positionTd = document.createElement("td");
+        positionTd.append(staff.position.positionName);
+        tr.append(positionTd);
+
+        const infoTd = document.createElement("td");
+        infoTd.append(staff.info);
+        tr.append(infoTd);
+
+        const rewardTd = document.createElement("td");
+        rewardTd.append(staff.reward);
+        tr.append(rewardTd);
+
+        const linksTd = document.createElement("td");
+
+        const editLink = document.createElement("a");
+        editLink.setAttribute("data-id", staff.id);
+        editLink.setAttribute("style", "cursor:pointer;padding:15px;");
+        editLink.append("Change");
+        editLink.addEventListener("click", e => {
+            e.preventDefault();
+            GetStaff(staff.id);
+        });
+        linksTd.append(editLink);
+
+        const removeLink = document.createElement("a");
+        removeLink.setAttribute("data-id", staff.id);
+        removeLink.setAttribute("style", "cursor:pointer;padding:15px;");
+        removeLink.append("Delete");
+        removeLink.addEventListener("click", e => {
+            e.preventDefault();
+            DeleteStaff(staff.id);
+        });
+
+        linksTd.append(removeLink);
+        tr.appendChild(linksTd);
+
+        return tr;
+    }
+
+    async function CreateUser(fullName, adress, phone, positionId, info, reward) {
+        const response = await fetch("api/staff", {
+            method: "POST",
+            headers: { "Accept": "application/json", "Content-Type": "application/json" },
+            body: JSON.stringify({
+                fullName: fullName,
+                adress: adress,
+                phone: parseInt(phone, 10),
+                positionId: parseInt(positionId, 10),
+                info: info,
+                reward: reward
+            })
+        });
+        if (response.ok === true) {
+            const user = await response.json();
+            reset();
+            document.querySelector("tbody").append(row(user));
+        }
+    }
+
+        async function EditUser(id, fullName, adress, phone, positionId, info, reward) {
+        const response = await fetch("/api/staff/", {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                id: parseInt(id, 10),
+                fullName: fullName,
+                adress: adress,
+                phone: parseInt(phone, 10),
+                positionId: parseInt(positionId, 10),
+                info: info,
+                reward: reward
+            })
+        });
+        if (response.ok === true) {
+            const staff = await response.json();
+            reset();
+            document.querySelector("tr[data-rowid='" + staff.id + "']").replaceWith(row(staff));
+        }
+    }
+
+    async function DeleteStaff(id) {
+        const response = await fetch("/api/staff/" + id, {
+            method: "DELETE",
+            headers: { "Accept": "application/json" }
+        });
+        if (response.ok === true) {
+            const staff = await response.json();
+            document.querySelector("tr[data-rowid='" + staff.id + "']").remove();
+        }
+    }
+
+    function reset() {
+        const form = document.forms["staffForm"];
+        form.reset();
+        form.elements["idIn"].value = 0;
+    }
+
+    document.getElementById("reset").click(function(e) {
+        e.preventDefault();
+        reset();
+    });
+
+    document.forms["staffForm"].addEventListener("submit", e => {
+        e.preventDefault();
+        const form = document.forms["staffForm"];
+        const id = form.elements["idIn"].value;
+        const fullName = form.elements["nameIn"].value;
+        const adress = form.elements["adressIn"].value;
+        const phone = form.elements["phoneIn"].value;
+        const positionId = form.elements["positionIn"].value;
+        const info = form.elements["infoIn"].value;
+        const reward = form.elements["rewardIn"].value;
+        if (id == 0)
+            CreateUser(fullName, adress, phone, positionId, info, reward);
+        else
+            EditUser(id, fullName, adress, phone, positionId, info, reward);
+    });
+
+    async function GetPositions() {
+        const response = await fetch("/api/staff/positions", {
+            method: "GET",
+            headers: { "Accept": "application/json" }
+        });
+        if (response.ok == true) {
+            const positions = await response.json();
+            let select = document.getElementById("positionIn");
+            var i = 0;
+            positions.forEach(g => {
+                select.options[i] = new Option(g.positionName, g.id);
+                i += 1;
+            })
+        }
+    }
+
+    GetStaffs();
+    GetPositions();
+
+
+
+    </script>
+</body>
+</html>
